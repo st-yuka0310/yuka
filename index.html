@@ -223,6 +223,13 @@
   .btn { border: 0; background: var(--surface-2); color: var(--accent); border-radius: 999px; padding: 10px 14px; font-weight: 700; }
   .btn.danger { color: var(--danger); }
   .btn.danger.armed { background: var(--danger); color: var(--surface); border-color: var(--danger); }
+  .things { display: flex; flex-direction: column; gap: 6px; }
+  .thing { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; background: var(--bg); border-radius: 14px; padding: 8px 8px 8px 14px; }
+  .thing b { font-weight: 700; overflow-wrap: anywhere; }
+  .thing span { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .thing-add { display: grid; grid-template-columns: 1.6fr 1fr 0.8fr; gap: 8px; align-items: end; }
+  .thing-add .btn { grid-column: 1 / -1; }
+  .field input::placeholder { color: var(--muted); opacity: .6; }
   .save-note { font-size: 12px; color: var(--muted); }
 
   /* タブバー */
@@ -386,6 +393,17 @@
         <button class="btn" type="button" id="calibBtn">材料費をこの単価に合わせる</button>
       </div>
     </form>
+    <div class="section">
+      <h2>換算するもの</h2>
+      <p>浮いたお金を、身の回りの何に置き換えて見たい？ いつも買うものや、欲しいものを入れてね。</p>
+      <div id="thingList" class="things"></div>
+      <form id="thingForm" class="thing-add">
+        <label class="field">なに？<input id="t-name" type="text" maxlength="20" placeholder="例：タピオカ"></label>
+        <label class="field">値段<input id="t-price" type="number" inputmode="numeric" min="1" step="1" placeholder="600"></label>
+        <label class="field">数え方<input id="t-unit" type="text" maxlength="4" placeholder="杯"></label>
+        <button class="btn" type="submit">追加</button>
+      </form>
+    </div>
     <form class="section" id="goalForm">
       <h2>目標</h2>
       <p>浮いたお金で何を買いたいですか？</p>
@@ -418,20 +436,24 @@
 (() => {
   const KEY = "jisui-savings-v1";
   const MEALS = { b: "朝", l: "昼", d: "夜" };
-  const THINGS = [
-    { name: "ラーメン", unit: "杯分", price: 900 },
-    { name: "コンビニ弁当", unit: "個分", price: 550 },
-    { name: "カフェラテ", unit: "杯分", price: 480 },
-    { name: "映画", unit: "回分", price: 1900 },
-    { name: "回転寿司", unit: "皿分", price: 120 },
-    { name: "焼肉ランチ", unit: "回分", price: 1500 },
+  // 換算するもの（設定で自分の身の回りのものに変えられる）
+  const DEFAULT_THINGS = [
+    { name: "フラペチーノ", unit: "杯", price: 700 },
+    { name: "コンビニスイーツ", unit: "個", price: 350 },
+    { name: "リップ", unit: "本", price: 1800 },
+    { name: "カラオケ", unit: "回", price: 1500 },
+    { name: "ネイル", unit: "回", price: 6000 },
+    { name: "推しのライブ", unit: "回", price: 9800 },
   ];
+  const things = () => (state.settings.things && state.settings.things.length ? state.settings.things : DEFAULT_THINGS);
+  const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const DEFAULTS = () => ({
     v: 1,
     demo: false,
     settings: {
       meals: { b: { out: 450, cook: 150 }, l: { out: 900, cook: 300 }, d: { out: 1300, cook: 450 } },
       goal: { name: "旅行の資金", amount: 30000 },
+      things: DEFAULT_THINGS.map((t) => ({ ...t })),
     },
     entries: [],
     groceries: [],
@@ -471,6 +493,7 @@
   try { state = JSON.parse(localStorage.getItem(KEY)); } catch { state = null; }
   if (!state || !Array.isArray(state.entries)) state = demoState();
   if (!Array.isArray(state.groceries)) state.groceries = [];
+  if (!Array.isArray(state.settings.things)) state.settings.things = DEFAULT_THINGS.map((t) => ({ ...t }));
 
   let cloud = null; // { ref }
   let writing = false, pending = false;
@@ -501,6 +524,7 @@
       if (remote && Array.isArray(remote.entries)) {
         state = remote;
         if (!Array.isArray(state.groceries)) state.groceries = [];
+        if (!Array.isArray(state.settings.things)) state.settings.things = DEFAULT_THINGS.map((t) => ({ ...t }));
         try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
         renderAll();
       } else if (!state.demo) {
@@ -571,15 +595,17 @@
     $("monthTotal").innerHTML = "<small>¥</small>" + Math.round(s.month).toLocaleString("ja-JP");
     // 自分で切り替えるまでは、1つ以上になるいちばん高いものを見せる（0杯分はさみしいので）
     if (!thingPicked) {
-      const ok = THINGS.map((x, i) => [x, i]).filter(([x]) => s.month >= x.price).sort((a, b) => b[0].price - a[0].price);
-      thingIdx = ok.length ? ok[0][1] : THINGS.length - 2;
+      const list = things().map((x, i) => [x, i]);
+      const ok = list.filter(([x]) => s.month >= x.price).sort((a, b) => b[0].price - a[0].price);
+      thingIdx = ok.length ? ok[0][1] : list.sort((a, b) => a[0].price - b[0].price)[0][1];
     }
-    const t = THINGS[thingIdx];
+    if (thingIdx >= things().length) thingIdx = 0;
+    const t = things()[thingIdx];
     $("swapName").textContent = t.name;
     $("swapCount").textContent = Math.floor(s.month / t.price).toLocaleString("ja-JP");
-    $("swapUnit").textContent = t.unit;
-    $("chips").innerHTML = THINGS.filter((x, i) => i !== thingIdx && s.month >= x.price).map((x) =>
-      '<span class="chip">' + x.name + ' <b class="yen">' + Math.floor(s.month / x.price).toLocaleString("ja-JP") + "</b>" + x.unit.replace("分", "") + "</span>"
+    $("swapUnit").textContent = t.unit + "分";
+    $("chips").innerHTML = things().filter((x, i) => i !== thingIdx && s.month >= x.price).map((x) =>
+      '<span class="chip">' + esc(x.name) + ' <b class="yen">' + Math.floor(s.month / x.price).toLocaleString("ja-JP") + "</b>" + esc(x.unit) + "</span>"
     ).join("");
     $("allTotal").textContent = yen(s.all);
     $("streak").textContent = streak();
@@ -647,6 +673,7 @@
   }
 
   // ---- 設定 ----
+  let armedThing = null;
   function renderSettings() {
     for (const m of Object.keys(MEALS)) {
       $("s-" + m + "-out").value = state.settings.meals[m].out;
@@ -658,6 +685,10 @@
       const d = new Date(Math.floor(last.key / 12), last.key % 12, 1);
       $("calibText").innerHTML = (d.getMonth() + 1) + "月の実際の材料費は 1食 <b class=\"yen\">" + yen(last.perMeal) + "</b> でした（食材費 " + yen(last.food) + " ÷ " + last.count + "回）。";
     }
+    $("thingList").innerHTML = things().map((x, i) =>
+      '<div class="thing"><b>' + esc(x.name) + '</b><span class="yen">' + yen(x.price) + " / 1" + esc(x.unit) + "</span>" +
+      '<button type="button" class="del' + (armedThing === i ? " armed" : "") + '" data-i="' + i + '">' + (armedThing === i ? "本当に消す" : "消す") + "</button></div>"
+    ).join("");
     $("g-name").value = state.settings.goal.name;
     $("g-amount").value = state.settings.goal.amount;
   }
@@ -702,11 +733,12 @@
     const st = streak(), s = sums();
     const g = state.settings.goal;
     const left = g.amount - s.all;
-    const t = THINGS[Math.floor(Math.random() * 3)];
+    const reach = things().filter((x) => s.month >= x.price);
+    const t = reach[Math.floor(Math.random() * reach.length)];
     const lines = [
       "+" + yen(saved(e)) + "！すごい、えらい〜！",
-      "これで今月" + t.name + Math.floor(s.month / t.price) + t.unit.replace("分", "") + "ぶん浮いたよ♪",
     ];
+    if (t) lines.push("これで今月" + t.name + Math.floor(s.month / t.price) + t.unit + "ぶん浮いたよ♪");
     if (st >= 2) lines.push(st + "日連続だよ！まじでえらい！");
     if (g.amount > 0 && left > 0) lines.push("「" + g.name + "」まで、あと" + yen(left) + "！");
     if (g.amount > 0 && left <= 0) lines.push("目標達成！！「" + g.name + "」いっちゃお〜！");
@@ -758,7 +790,7 @@
     cheerIdx = (cheerIdx + 1) % CHEERS.length;
     say(CHEERS[cheerIdx], true);
   });
-  $("swap").addEventListener("click", () => { thingIdx = (thingIdx + 1) % THINGS.length; thingPicked = true; renderHome(); });
+  $("swap").addEventListener("click", () => { thingIdx = (thingIdx + 1) % things().length; thingPicked = true; renderHome(); });
   $("demoClear").addEventListener("click", () => { state.entries = []; state.groceries = []; state.demo = false; persist(); renderAll(); });
   $("shopForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
@@ -803,6 +835,23 @@
       state.settings.meals[m] = { out: num($("s-" + m + "-out").value, cur.out), cook: num($("s-" + m + "-cook").value, cur.cook) };
     }
     persist(); renderAll(); toast("金額を保存しました", false);
+  });
+  $("thingForm").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const name = $("t-name").value.trim(), price = num($("t-price").value, 0), unit = $("t-unit").value.trim() || "個";
+    if (!name || !price) { toast("名前と値段を入れてね", false); return; }
+    state.settings.things = [...things(), { name, price, unit }];
+    $("t-name").value = ""; $("t-price").value = ""; $("t-unit").value = "";
+    persist(); renderAll(); toast("「" + name + "」を追加しました", false);
+  });
+  $("thingList").addEventListener("click", (ev) => {
+    const b = ev.target.closest(".del"); if (!b) return;
+    const i = Number(b.dataset.i);
+    if (armedThing === i) {
+      if (things().length <= 1) { toast("1つは残してね", false); armedThing = null; renderSettings(); return; }
+      state.settings.things = things().filter((_, j) => j !== i);
+      armedThing = null; thingPicked = false; persist(); renderAll();
+    } else { armedThing = i; renderSettings(); }
   });
   $("goalForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
