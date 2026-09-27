@@ -1,5 +1,5 @@
 // オフラインでも開けるように、アプリ本体をキャッシュする
-const CACHE = "jisui-v3";
+const CACHE = "jisui-v4";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -12,7 +12,8 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    fetch(e.request)
+    // ブラウザの一時保存を飛ばして、いつも最新版を取りに行く
+    fetch(e.request, { cache: "no-cache" })
       .then((res) => {
         if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
         return res;
