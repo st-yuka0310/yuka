@@ -1,15 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#2F7A4A"/>
-  <rect x="186" y="92" width="140" height="38" rx="12" fill="#F0B941"/>
-  <path d="M200 140 h112 v14 c0 16 56 32 56 88 v150 c0 32 -22 54 -54 54 h-116 c-32 0 -54 -22 -54 -54 v-150 c0 -56 56 -72 56 -88 z" fill="#E7ECE2"/>
-  <clipPath id="c"><path d="M200 140 h112 v14 c0 16 56 32 56 88 v150 c0 32 -22 54 -54 54 h-116 c-32 0 -54 -22 -54 -54 v-150 c0 -56 56 -72 56 -88 z"/></clipPath>
-  <g clip-path="url(#c)">
-    <rect x="0" y="300" width="512" height="200" fill="#F0B941"/>
-    <g fill="#F8DE9A">
-      <ellipse cx="190" cy="330" rx="18" ry="7"/><ellipse cx="236" cy="330" rx="18" ry="7"/><ellipse cx="282" cy="330" rx="18" ry="7"/><ellipse cx="328" cy="330" rx="18" ry="7"/>
-      <ellipse cx="213" cy="362" rx="18" ry="7"/><ellipse cx="259" cy="362" rx="18" ry="7"/><ellipse cx="305" cy="362" rx="18" ry="7"/>
-      <ellipse cx="190" cy="394" rx="18" ry="7"/><ellipse cx="236" cy="394" rx="18" ry="7"/><ellipse cx="282" cy="394" rx="18" ry="7"/><ellipse cx="328" cy="394" rx="18" ry="7"/>
-    </g>
-  </g>
-  <path d="M200 140 h112 v14 c0 16 56 32 56 88 v150 c0 32 -22 54 -54 54 h-116 c-32 0 -54 -22 -54 -54 v-150 c0 -56 56 -72 56 -88 z" fill="none" stroke="#1E2A21" stroke-width="12" stroke-linejoin="round"/>
+  <rect width="512" height="512" fill="#FF7A59"/>
+  <path d="M256 92 c30 0 52 22 70 52 l92 160 c26 46 0 104 -58 104 h-208 c-58 0 -84 -58 -58 -104 l92 -160 c18 -30 40 -52 70 -52 z" fill="#FFFFFF"/>
+  <rect x="176" y="300" width="160" height="108" rx="10" fill="#1F2A33"/>
+  <circle cx="256" cy="354" r="36" fill="#FFC93C"/>
+  <text x="256" y="370" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="44" fill="#1F2A33">¥</text>
+  <circle cx="214" cy="232" r="10" fill="#1F2A33"/><circle cx="298" cy="232" r="10" fill="#1F2A33"/>
+  <path d="M238 258 q18 16 36 0" stroke="#1F2A33" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <circle cx="196" cy="258" r="12" fill="#FFB3A1"/><circle cx="316" cy="258" r="12" fill="#FFB3A1"/>
 </svg>
