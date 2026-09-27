@@ -1,5 +1,5 @@
 // オフラインでも開けるように、アプリ本体をキャッシュする
-const CACHE = "jisui-v2";
+const CACHE = "jisui-v3";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {

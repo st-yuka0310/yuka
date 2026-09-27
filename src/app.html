@@ -22,24 +22,10 @@
     --display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif;
     --body: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      color-scheme: dark;
-      --bg: #221B20; --surface: #2D252B; --surface-2: #3A2F36; --ink: #F9ECEF;
-      --muted: #C4A9B3; --line: #463A42; --accent: #FF8A7E; --accent-ink: #2B1412;
-      --gold: #FFCB52; --gold-soft: #4D3B18; --mint: #1F3A33; --mint-ink: #86DDBF;
-      --danger: #FF7D8E; --shadow: 0 6px 18px rgba(0, 0, 0, .3);
-    }
-  }
-  :root[data-theme="dark"] {
-    color-scheme: dark;
-    --bg: #221B20; --surface: #2D252B; --surface-2: #3A2F36; --ink: #F9ECEF;
-      --muted: #C4A9B3; --line: #463A42; --accent: #FF8A7E; --accent-ink: #2B1412;
-      --gold: #FFCB52; --gold-soft: #4D3B18; --mint: #1F3A33; --mint-ink: #86DDBF;
-      --danger: #FF7D8E; --shadow: 0 6px 18px rgba(0, 0, 0, .3);
-  }
 
-  html, body { background: var(--bg); }
+  /* iPhone がダークモードでも、いつものピンクの見た目で表示する */
+  :root { color-scheme: light; }
+  html, body { background: var(--bg); min-height: 100%; }
   body {
     color: var(--ink);
     font-family: var(--body);
@@ -166,6 +152,16 @@
   .month-head span { font-size: 12px; color: var(--muted); text-align: right; }
   .row .minus { font-family: var(--display); font-weight: 700; color: var(--muted); }
 
+  /* いつの記録か */
+  .when { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 6px; }
+  .when button, .when .pick {
+    border: 2px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 0;
+    font-size: 13px; font-weight: 700; color: var(--muted); text-align: center; position: relative;
+  }
+  .when [aria-pressed="true"], .when .pick.on { border-color: var(--accent); color: var(--accent); background: var(--surface-2); }
+  .when .pick input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; border: 0; }
+  .past-note { margin: 0; font-size: 12.5px; color: var(--accent); font-weight: 700; text-align: center; }
+
   /* 数字の列 */
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .stat { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); padding: 10px 12px; display: flex; flex-direction: column; }
@@ -173,12 +169,12 @@
   .stat .v { font-family: var(--display); font-weight: 700; font-size: 20px; line-height: 1.3; }
   .stat .v small { font-size: 12px; font-weight: 500; margin-left: 1px; }
 
-  /* 貯金びん */
+  /* 豚の貯金箱 */
   .jar-card {
     background: var(--surface); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow);
-    display: grid; grid-template-columns: 104px 1fr; gap: 16px; align-items: center;
+    display: grid; grid-template-columns: 116px 1fr; gap: 14px; align-items: center;
   }
-  .jar-card svg { width: 104px; height: auto; display: block; }
+  .jar-card svg { width: 116px; height: auto; display: block; overflow: visible; }
   .jar-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .jar-info h2 { margin: 0; font-family: var(--display); font-size: 18px; font-weight: 700; text-wrap: balance; overflow-wrap: anywhere; }
   .jar-info .pct { font-family: var(--display); font-weight: 900; font-size: 32px; color: var(--gold); line-height: 1.1; }
@@ -293,11 +289,17 @@
     </div>
 
     <div class="cook">
+      <div class="when" role="group" aria-label="いつのごはん？">
+        <button type="button" data-day="0" aria-pressed="true">今日</button>
+        <button type="button" data-day="1" aria-pressed="false">きのう</button>
+        <label class="pick" id="pickLabel"><span id="pickText">日付をえらぶ</span><input id="dayPick" type="date"></label>
+      </div>
       <div class="seg" role="group" aria-label="どのごはん？">
         <button type="button" data-meal="b" aria-pressed="false">朝</button>
         <button type="button" data-meal="l" aria-pressed="false">昼</button>
         <button type="button" data-meal="d" aria-pressed="false">夜</button>
       </div>
+      <p class="past-note" id="pastNote" hidden></p>
       <button type="button" class="go" id="go">作った！<span id="goSub">+¥600 浮く</span></button>
       <button type="button" class="tweak-toggle" id="tweakToggle" aria-expanded="false">金額を変える</button>
       <div class="tweak" id="tweak" hidden>
@@ -323,21 +325,25 @@
     </div>
 
     <div class="jar-card">
-      <svg viewBox="0 0 120 150" role="img" aria-labelledby="jarTitle">
-        <title id="jarTitle">目標までの貯金びん</title>
-        <defs>
-          <clipPath id="jarClip">
-            <path d="M40 22 h40 v6 c0 6 20 12 20 32 v66 c0 12 -8 20 -20 20 h-40 c-12 0 -20 -8 -20 -20 v-66 c0 -20 20 -26 20 -32 z"/>
-          </clipPath>
-        </defs>
-        <rect x="34" y="6" width="52" height="14" rx="4" style="fill:var(--gold)"/>
-        <path d="M40 22 h40 v6 c0 6 20 12 20 32 v66 c0 12 -8 20 -20 20 h-40 c-12 0 -20 -8 -20 -20 v-66 c0 -20 20 -26 20 -32 z" style="fill:var(--surface-2)"/>
+      <svg viewBox="0 0 140 124" role="img" aria-labelledby="jarTitle" class="pig">
+        <title id="jarTitle">目標までの豚の貯金箱</title>
+        <defs><clipPath id="jarClip"><path d="M22 66 c0 -26 22 -44 50 -44 c26 0 44 14 48 34 c0 26 -20 46 -48 46 c-30 0 -50 -12 -50 -36 z"/></clipPath></defs>
+        <path d="M24 70 c-10 -2 -14 -10 -8 -14 c5 -3 9 3 5 6" fill="none" stroke="#E98A9C" stroke-width="3" stroke-linecap="round"/>
+        <rect x="38" y="92" width="14" height="22" rx="7" fill="#FFB8C6" stroke="#E98A9C" stroke-width="3"/>
+        <rect x="88" y="92" width="14" height="22" rx="7" fill="#FFB8C6" stroke="#E98A9C" stroke-width="3"/>
+        <path d="M46 30 l-4 -18 l18 10 z" fill="#FFB8C6" stroke="#E98A9C" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M22 66 c0 -26 22 -44 50 -44 c26 0 44 14 48 34 c0 26 -20 46 -48 46 c-30 0 -50 -12 -50 -36 z" fill="#FFD3DC"/>
         <g clip-path="url(#jarClip)">
-          <rect id="jarFill" x="0" y="146" width="120" height="0" style="fill:var(--gold)"/>
-          <g id="coins" style="fill:var(--gold-soft)" opacity=".7"></g>
+          <rect id="jarFill" x="0" y="102" width="140" height="0" style="fill:var(--gold)"/>
+          <g id="coins" style="fill:var(--gold-soft)" opacity=".8"></g>
         </g>
-        <path d="M40 22 h40 v6 c0 6 20 12 20 32 v66 c0 12 -8 20 -20 20 h-40 c-12 0 -20 -8 -20 -20 v-66 c0 -20 20 -26 20 -32 z" fill="none" style="stroke:var(--ink)" stroke-width="3" stroke-linejoin="round"/>
-        <path d="M30 64 v44" style="stroke:var(--surface)" stroke-width="4" stroke-linecap="round" opacity=".6"/>
+        <path d="M22 66 c0 -26 22 -44 50 -44 c26 0 44 14 48 34 c0 26 -20 46 -48 46 c-30 0 -50 -12 -50 -36 z" fill="none" stroke="#E98A9C" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M84 26 l6 -16 l10 18 z" fill="#FFB8C6" stroke="#E98A9C" stroke-width="3" stroke-linejoin="round"/>
+        <rect x="58" y="27" width="26" height="6" rx="3" fill="#6B4750"/>
+        <ellipse cx="121" cy="66" rx="11" ry="14" fill="#FFB8C6" stroke="#E98A9C" stroke-width="3"/>
+        <ellipse cx="118" cy="61" rx="2.2" ry="3.2" fill="#C9687D"/><ellipse cx="124" cy="71" rx="2.2" ry="3.2" fill="#C9687D"/>
+        <circle cx="100" cy="52" r="3.6" fill="#4A3239"/>
+        <ellipse cx="100" cy="66" rx="6" ry="3.6" fill="#FF9EB0" opacity=".8"/>
       </svg>
       <div class="jar-info">
         <span class="eyebrow">目標</span>
@@ -555,7 +561,29 @@
   }
 
   // ---- ホーム ----
-  let meal = (() => { const h = new Date().getHours(); return h < 10 ? "b" : h < 16 ? "l" : "d"; })();
+  let meal = (() => { const h = new Date().getHours(); return h < 4 ? "d" : h < 10 ? "b" : h < 16 ? "l" : "d"; })();
+  // 記録する日（null なら今日）。記録したら今日に戻す
+  let pickedDay = null;
+  const WD = ["日", "月", "火", "水", "木", "金", "土"];
+  const midnight = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const isoDay = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const dayLabel = (d) => (d.getMonth() + 1) + "/" + d.getDate() + "（" + WD[d.getDay()] + "）";
+  function stampFor(hour) {
+    if (!pickedDay) return Date.now();
+    const d = new Date(pickedDay); d.setHours(hour, 0, 0, 0); return d.getTime();
+  }
+  function renderWhen() {
+    const today = midnight(new Date());
+    const diff = pickedDay ? Math.round((today - pickedDay) / 86400000) : 0;
+    document.querySelectorAll(".when button").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.day) === diff && diff <= 1)));
+    const custom = diff > 1;
+    $("pickLabel").classList.toggle("on", custom);
+    $("pickText").textContent = custom ? dayLabel(pickedDay) : "日付をえらぶ";
+    $("dayPick").max = isoDay(today);
+    $("dayPick").value = isoDay(pickedDay || today);
+    $("pastNote").hidden = !pickedDay;
+    if (pickedDay) $("pastNote").textContent = dayLabel(pickedDay) + " の分として記録します";
+  }
   let thingIdx = 0, thingPicked = false;
 
   function currentAmounts() {
@@ -564,6 +592,7 @@
     return { o: num($("tOut").value, base.out), c: num($("tCook").value, base.cook) };
   }
   function renderCook() {
+    renderWhen();
     document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.meal === meal)));
     const base = state.settings.meals[meal];
     $("tOut").value = base.out;
@@ -611,13 +640,13 @@
     $("goalName").textContent = g.name || "目標";
     $("goalPct").textContent = Math.floor(p * 100) + "%";
     $("goalSub").textContent = p >= 1 ? "達成！ " + yen(s.all) + " 貯まりました" : yen(s.all) + " / " + yen(g.amount) + "（あと " + yen(g.amount - s.all) + "）";
-    const top = 22, bottom = 146, h = (bottom - top) * p;
+    const top = 22, bottom = 102, h = (bottom - top) * p;
     $("jarFill").setAttribute("y", String(bottom - h));
     $("jarFill").setAttribute("height", String(h));
     // コインの模様
     let coins = "";
     for (let y = bottom - 8, row = 0; y > bottom - h + 4; y -= 11, row++) {
-      for (let x = 30 + (row % 2) * 8; x < 96; x += 16) coins += '<ellipse cx="' + x + '" cy="' + y + '" rx="6" ry="2.6"/>';
+      for (let x = 26 + (row % 2) * 8; x < 124; x += 16) coins += '<ellipse cx="' + x + '" cy="' + y + '" rx="6" ry="2.6"/>';
     }
     $("coins").innerHTML = coins;
   }
@@ -755,14 +784,15 @@
   $("go").addEventListener("click", () => {
     if (state.demo) { state.entries = []; state.groceries = []; state.demo = false; }
     const a = currentAmounts();
-    const e = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t: Date.now(), m: meal, o: a.o, c: a.c };
+    const e = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t: stampFor({ b: 8, l: 12, d: 19 }[meal]), m: meal, o: a.o, c: a.c };
     state.entries.push(e);
     lastId = e.id;
     persist();
     if (!$("tweak").hidden) $("tweakToggle").click();
     renderHome(); renderLog();
     $("monthTotal").classList.remove("bump"); void $("monthTotal").offsetWidth; $("monthTotal").classList.add("bump");
-    toast("+" + yen(saved(e)) + " 記録しました", true);
+    toast((pickedDay ? dayLabel(pickedDay) + "に " : "") + "+" + yen(saved(e)) + " 記録しました", true);
+    pickedDay = null; renderWhen();
     say(cookLine(e), true);
   });
   $("toastUndo").addEventListener("click", () => {
@@ -771,6 +801,19 @@
     persist(); renderHome(); renderLog();
     toast("取り消しました", false);
     say(idleLine(), false);
+  });
+  document.querySelectorAll(".when button").forEach((b) => b.addEventListener("click", () => {
+    const n = Number(b.dataset.day);
+    if (n === 0) pickedDay = null;
+    else { const d = midnight(new Date()); d.setDate(d.getDate() - n); pickedDay = d; }
+    renderWhen();
+  }));
+  $("dayPick").addEventListener("change", () => {
+    const v = $("dayPick").value; if (!v) return;
+    const [y, m, d] = v.split("-").map(Number);
+    const picked = new Date(y, m - 1, d), today = midnight(new Date());
+    pickedDay = picked >= today ? null : picked;
+    renderWhen();
   });
   $("buddyBtn").addEventListener("click", () => {
     cheerIdx = (cheerIdx + 1) % CHEERS.length;
@@ -783,12 +826,13 @@
     const a = num($("shopAmt").value, 0);
     if (!a) { toast("金額を入れてください", false); return; }
     if (state.demo) { state.entries = []; state.groceries = []; state.demo = false; }
-    state.groceries.push({ id: "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t: Date.now(), a });
+    state.groceries.push({ id: "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t: stampFor(18), a });
     lastId = state.groceries[state.groceries.length - 1].id;
     $("shopAmt").value = "";
     $("shopAmt").blur();
     persist(); renderHome(); renderLog();
-    toast("食材費 " + yen(a) + " を足しました", true);
+    toast((pickedDay ? dayLabel(pickedDay) + "の " : "") + "食材費 " + yen(a) + " を足しました", true);
+    pickedDay = null; renderWhen();
     say("買い出しおつかれさま！これでいっぱい作れるね♪", true);
   });
   $("calibBtn").addEventListener("click", () => {
