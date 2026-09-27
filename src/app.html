@@ -4,34 +4,39 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
 <style>
   :root {
-    --bg: #F6F4F2;
+    --bg: #FFF5F1;
     --surface: #FFFFFF;
-    --surface-2: #EEEAE6;
-    --ink: #1F2A33;
-    --muted: #6A7179;
-    --line: #E0DAD4;
-    --accent: #E8573A;
+    --surface-2: #FFEAE3;
+    --ink: #4A3239;
+    --muted: #9C7F88;
+    --line: #F7D9D0;
+    --accent: #FF6F61;
     --accent-ink: #FFFFFF;
-    --gold: #D38C00;
-    --gold-soft: #FCE6A8;
-    --danger: #B83227;
-    --radius: 18px;
+    --gold: #E39A00;
+    --gold-soft: #FFEDB8;
+    --mint: #D9F3EA;
+    --mint-ink: #2E8A6E;
+    --danger: #D2354B;
+    --shadow: 0 6px 18px rgba(255, 111, 97, .12);
+    --radius: 24px;
     --display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif;
-    --body: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+    --body: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark;
-      --bg: #151A1F; --surface: #1E252C; --surface-2: #28313A; --ink: #ECEFF2;
-      --muted: #9AA4AE; --line: #333D47; --accent: #FF8A6B; --accent-ink: #1C0F0B;
-      --gold: #FFC93C; --gold-soft: #4A3A12; --danger: #FF7B6B;
+      --bg: #221B20; --surface: #2D252B; --surface-2: #3A2F36; --ink: #F9ECEF;
+      --muted: #C4A9B3; --line: #463A42; --accent: #FF8A7E; --accent-ink: #2B1412;
+      --gold: #FFCB52; --gold-soft: #4D3B18; --mint: #1F3A33; --mint-ink: #86DDBF;
+      --danger: #FF7D8E; --shadow: 0 6px 18px rgba(0, 0, 0, .3);
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --bg: #151A1F; --surface: #1E252C; --surface-2: #28313A; --ink: #ECEFF2;
-      --muted: #9AA4AE; --line: #333D47; --accent: #FF8A6B; --accent-ink: #1C0F0B;
-      --gold: #FFC93C; --gold-soft: #4A3A12; --danger: #FF7B6B;
+    --bg: #221B20; --surface: #2D252B; --surface-2: #3A2F36; --ink: #F9ECEF;
+      --muted: #C4A9B3; --line: #463A42; --accent: #FF8A7E; --accent-ink: #2B1412;
+      --gold: #FFCB52; --gold-soft: #4D3B18; --mint: #1F3A33; --mint-ink: #86DDBF;
+      --danger: #FF7D8E; --shadow: 0 6px 18px rgba(0, 0, 0, .3);
   }
 
   html, body { background: var(--bg); }
@@ -84,13 +89,39 @@
   .swap .hint { font-size: 12px; color: var(--muted); font-family: var(--body); font-weight: 400; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   .chip {
-    background: var(--surface-2); border-radius: 999px; padding: 3px 10px; font-size: 12.5px; color: var(--muted);
+    background: var(--mint); border-radius: 999px; padding: 3px 10px; font-size: 12.5px; color: var(--muted);
   }
-  .chip b { color: var(--ink); font-weight: 700; }
+  .chip b { color: var(--mint-ink); font-weight: 700; }
+
+  /* おにぎりの応援キャラ */
+  .buddy { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: center; }
+  .buddy button { border: 0; background: none; padding: 0; }
+  .mascot { width: 92px; height: auto; display: block; overflow: visible; }
+  .mascot .arm { fill: none; stroke-linecap: round; }
+  .mascot .arm-line { stroke: var(--line); stroke-width: 11; }
+  .mascot .arm-fill { stroke: #FFFFFF; stroke-width: 7; }
+  .mascot .up, .mascot .joy { display: none; }
+  .mascot.cheer .up, .mascot.cheer .joy { display: inline; }
+  .mascot.cheer .down, .mascot.cheer .calm { display: none; }
+  .mascot.cheer { animation: hop .6s ease 2; }
+  @keyframes hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px) rotate(-4deg); } 70% { transform: translateY(0) rotate(3deg); } }
+  .mascot { animation: sway 3.2s ease-in-out infinite; transform-origin: 50% 90%; }
+  @keyframes sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+  .bubble {
+    position: relative; background: var(--surface); border: 2px solid var(--line); border-radius: 20px;
+    padding: 10px 14px; font-weight: 700; font-size: 14.5px; line-height: 1.55; box-shadow: var(--shadow);
+  }
+  .bubble::before {
+    content: ""; position: absolute; left: -9px; top: 50%; width: 14px; height: 14px; margin-top: -7px;
+    background: var(--surface); border-left: 2px solid var(--line); border-bottom: 2px solid var(--line);
+    transform: rotate(45deg); border-bottom-left-radius: 4px;
+  }
+  .bubble.pop { animation: pop .25s ease; }
+  .spark { color: var(--gold); }
 
   /* 記録パネル */
   .cook {
-    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
     padding: 16px; display: flex; flex-direction: column; gap: 12px;
   }
   .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--surface-2); border-radius: 12px; padding: 4px; }
@@ -99,13 +130,14 @@
   }
   .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
   .go {
-    border: 0; border-radius: 16px; background: var(--accent); color: var(--accent-ink);
+    border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink);
+    box-shadow: 0 6px 0 color-mix(in srgb, var(--accent) 70%, #000 12%);
     padding: 18px 12px; display: flex; flex-direction: column; align-items: center; gap: 0;
     font-family: var(--display); font-weight: 900; font-size: 26px; line-height: 1.2;
     transition: transform .12s ease;
   }
   .go span { font-size: 14px; font-weight: 700; opacity: .9; }
-  .go:active { transform: scale(.97); }
+  .go:active { transform: translateY(4px); box-shadow: 0 2px 0 color-mix(in srgb, var(--accent) 70%, #000 12%); }
   .tweak-toggle { background: none; border: 0; color: var(--muted); font-size: 13px; padding: 0; align-self: center; text-decoration: underline; text-underline-offset: 3px; }
   .tweak { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .field { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--muted); }
@@ -115,7 +147,7 @@
   }
 
   /* 食材費 */
-  .shop { background: var(--surface); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .shop { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
   .shop-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
   .shop-total { font-family: var(--display); font-weight: 700; font-size: 22px; }
   .shop-add { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
@@ -136,14 +168,14 @@
 
   /* 数字の列 */
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .stat { background: var(--surface); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; }
+  .stat { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); padding: 10px 12px; display: flex; flex-direction: column; }
   .stat .k { font-size: 11.5px; color: var(--muted); }
   .stat .v { font-family: var(--display); font-weight: 700; font-size: 20px; line-height: 1.3; }
   .stat .v small { font-size: 12px; font-weight: 500; margin-left: 1px; }
 
   /* 貯金びん */
   .jar-card {
-    background: var(--surface); border-radius: var(--radius); padding: 16px;
+    background: var(--surface); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow);
     display: grid; grid-template-columns: 104px 1fr; gap: 16px; align-items: center;
   }
   .jar-card svg { width: 104px; height: auto; display: block; }
@@ -174,7 +206,7 @@
   .section p { margin: 0; font-size: 13px; color: var(--muted); }
   .meal-row { display: grid; grid-template-columns: 2.2em 1fr 1fr; gap: 10px; align-items: end; }
   .meal-row .tag { text-align: center; padding: 8px 0; }
-  .btn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 12px; padding: 10px 14px; font-weight: 700; }
+  .btn { border: 0; background: var(--surface-2); color: var(--accent); border-radius: 999px; padding: 10px 14px; font-weight: 700; }
   .btn.danger { color: var(--danger); }
   .btn.danger.armed { background: var(--danger); color: var(--surface); border-color: var(--danger); }
   .save-note { font-size: 12px; color: var(--muted); }
@@ -187,7 +219,7 @@
   }
   nav .tabs { max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); }
   nav button { border: 0; background: none; padding: 8px 0; font-size: 13px; color: var(--muted); font-weight: 700; }
-  nav button[aria-current="page"] { color: var(--accent); }
+  nav button[aria-current="page"] { color: var(--accent); background: var(--surface-2); border-radius: 999px; }
 
   /* トースト */
   .toast {
@@ -198,7 +230,7 @@
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     font-weight: 700;
   }
-  .toast button { background: none; border: 0; color: var(--gold); font-weight: 700; padding: 0; }
+  .toast button { background: var(--accent); border: 0; color: var(--accent-ink); font-weight: 700; padding: 4px 12px; border-radius: 999px; white-space: nowrap; }
   @keyframes pop { from { transform: translateY(8px); opacity: .4; } to { transform: none; opacity: 1; } }
   .toast:not([hidden]) { animation: pop .2s ease; }
   @keyframes bump { 50% { transform: scale(1.06); } }
@@ -214,6 +246,33 @@
     <div class="demo" id="demoBar" hidden>
       <span>お試しデータを表示しています</span>
       <button type="button" id="demoClear">消して始める</button>
+    </div>
+
+    <div class="buddy">
+      <button type="button" id="buddyBtn" aria-label="おにぎりに話しかける">
+        <svg class="mascot" id="mascot" viewBox="0 0 120 120" aria-hidden="true">
+          <g class="down">
+            <path class="arm arm-line" d="M30 78 q-10 4 -12 14"/><path class="arm arm-fill" d="M30 78 q-10 4 -12 14"/>
+            <path class="arm arm-line" d="M90 78 q10 4 12 14"/><path class="arm arm-fill" d="M90 78 q10 4 12 14"/>
+          </g>
+          <g class="up">
+            <path class="arm arm-line" d="M34 66 q-12 -6 -16 -22"/><path class="arm arm-fill" d="M34 66 q-12 -6 -16 -22"/>
+            <path class="arm arm-line" d="M86 66 q12 -6 16 -22"/><path class="arm arm-fill" d="M86 66 q12 -6 16 -22"/>
+            <path d="M12 36 l2 -6 l2 6 l6 2 l-6 2 l-2 6 l-2 -6 l-6 -2 z" style="fill:var(--gold)"/>
+            <path d="M104 30 l1.5 -4.5 l1.5 4.5 l4.5 1.5 l-4.5 1.5 l-1.5 4.5 l-1.5 -4.5 l-4.5 -1.5 z" style="fill:var(--accent)"/>
+          </g>
+          <path d="M60 12 c9 0 15 6 20 14 l26 45 c8 14 0 30 -17 30 h-58 c-17 0 -25 -16 -17 -30 l26 -45 c5 -8 11 -14 20 -14 z" fill="#FFFFFF" style="stroke:var(--line)" stroke-width="3"/>
+          <rect x="39" y="72" width="42" height="29" rx="4" fill="#3B3A45"/>
+          <circle cx="60" cy="86.5" r="9.5" fill="#FFC93C"/>
+          <text x="60" y="91" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="12" fill="#3B3A45">¥</text>
+          <g class="calm" fill="#3B3A45"><circle cx="48" cy="54" r="3.4"/><circle cx="72" cy="54" r="3.4"/></g>
+          <g class="joy" fill="none" stroke="#3B3A45" stroke-width="3" stroke-linecap="round"><path d="M44 55 q4 -6 8 0"/><path d="M68 55 q4 -6 8 0"/></g>
+          <path class="calm" d="M55 61 q5 5 10 0" fill="none" stroke="#3B3A45" stroke-width="2.6" stroke-linecap="round"/>
+          <path class="joy" d="M54 60 h12 q0 8 -6 8 q-6 0 -6 -8 z" fill="#FF6F61"/>
+          <ellipse cx="42" cy="61" rx="5" ry="3.2" fill="#FFB3A7"/><ellipse cx="78" cy="61" rx="5" ry="3.2" fill="#FFB3A7"/>
+        </svg>
+      </button>
+      <p class="bubble" id="bubble" role="status">今日もなにか作ってみよ〜？</p>
     </div>
 
     <div class="hero">
@@ -473,7 +532,7 @@
 
   // ---- ホーム ----
   let meal = (() => { const h = new Date().getHours(); return h < 10 ? "b" : h < 16 ? "l" : "d"; })();
-  let thingIdx = 0;
+  let thingIdx = 0, thingPicked = false;
 
   function currentAmounts() {
     const base = state.settings.meals[meal];
@@ -496,11 +555,16 @@
     const now = new Date();
     $("monthLabel").textContent = (now.getMonth() + 1) + "月　自炊で浮いたお金";
     $("monthTotal").innerHTML = "<small>¥</small>" + Math.round(s.month).toLocaleString("ja-JP");
+    // 自分で切り替えるまでは、1つ以上になるいちばん高いものを見せる（0杯分はさみしいので）
+    if (!thingPicked) {
+      const ok = THINGS.map((x, i) => [x, i]).filter(([x]) => s.month >= x.price).sort((a, b) => b[0].price - a[0].price);
+      thingIdx = ok.length ? ok[0][1] : THINGS.length - 2;
+    }
     const t = THINGS[thingIdx];
     $("swapName").textContent = t.name;
     $("swapCount").textContent = Math.floor(s.month / t.price).toLocaleString("ja-JP");
     $("swapUnit").textContent = t.unit;
-    $("chips").innerHTML = THINGS.filter((_, i) => i !== thingIdx).map((x) =>
+    $("chips").innerHTML = THINGS.filter((x, i) => i !== thingIdx && s.month >= x.price).map((x) =>
       '<span class="chip">' + x.name + ' <b class="yen">' + Math.floor(s.month / x.price).toLocaleString("ja-JP") + "</b>" + x.unit.replace("分", "") + "</span>"
     ).join("");
     $("allTotal").textContent = yen(s.all);
@@ -584,7 +648,56 @@
     $("g-amount").value = state.settings.goal.amount;
   }
 
-  function renderAll() { renderCook(); renderHome(); renderLog(); renderSettings(); }
+  function renderAll() { renderCook(); renderHome(); renderLog(); renderSettings(); say(idleLine(), false); }
+
+  // ---- おにぎりのセリフ ----
+  const CHEERS = [
+    "卵かけご飯だって立派な自炊だよ！",
+    "作ったぶんだけ、ちゃんと貯まってる♪",
+    "無理しないのがいちばん。できる日にやろ〜",
+    "冷凍ごはんは未来の自分へのプレゼント！",
+    "今日もおつかれさま。えらいよ〜",
+    "外食も楽しんでOK！そのぶん自炊でバランス♪",
+  ];
+  let cheerIdx = -1;
+  function idleLine() {
+    const today = state.entries.filter((e) => dayKey(e.t) === dayKey(Date.now())).length;
+    const st = streak(), s = sums();
+    const g = state.settings.goal;
+    if (!state.entries.length || state.demo) return "はじめまして！ごはん作ったら「作った！」を押してね。いっしょに貯めよ〜";
+    if (today >= 2) return "今日はもう" + today + "回も作ってる…！天才では？";
+    if (today === 1) return st >= 2 ? st + "日連続！この調子この調子♪" : "今日も作ってえらい！明日もゆるっといこ〜";
+    if (st >= 1) return "きのうまで" + st + "日連続！今日もつなげちゃう？";
+    if (g.amount > 0 && s.all >= g.amount) return "「" + g.name + "」の目標、達成してるよ！すごすぎ〜！";
+    return "今日もなにか作ってみよ〜？卵かけご飯でもえらいよ！";
+  }
+  let sayTimer;
+  function say(text, cheer) {
+    const b = $("bubble");
+    b.textContent = text;
+    b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop");
+    const m = $("mascot");
+    clearTimeout(sayTimer);
+    m.classList.remove("cheer");
+    if (cheer) {
+      void m.getBoundingClientRect(); m.classList.add("cheer");
+      sayTimer = setTimeout(() => m.classList.remove("cheer"), 2600);
+    }
+  }
+  function cookLine(e) {
+    const st = streak(), s = sums();
+    const g = state.settings.goal;
+    const left = g.amount - s.all;
+    const t = THINGS[Math.floor(Math.random() * 3)];
+    const lines = [
+      "+" + yen(saved(e)) + "！すごい、えらい〜！",
+      "これで今月" + t.name + Math.floor(s.month / t.price) + t.unit.replace("分", "") + "ぶん浮いたよ♪",
+    ];
+    if (st >= 2) lines.push(st + "日連続だよ！まじでえらい！");
+    if (g.amount > 0 && left > 0) lines.push("「" + g.name + "」まで、あと" + yen(left) + "！");
+    if (g.amount > 0 && left <= 0) lines.push("目標達成！！「" + g.name + "」いっちゃお〜！");
+    return lines[Math.floor(Math.random() * lines.length)];
+  }
 
   // ---- 操作 ----
   let toastTimer, lastId = null;
@@ -617,15 +730,21 @@
     if (!$("tweak").hidden) $("tweakToggle").click();
     renderHome(); renderLog();
     $("monthTotal").classList.remove("bump"); void $("monthTotal").offsetWidth; $("monthTotal").classList.add("bump");
-    toast("+" + yen(saved(e)) + " 浮いた！えらい！", true);
+    toast("+" + yen(saved(e)) + " 記録しました", true);
+    say(cookLine(e), true);
   });
   $("toastUndo").addEventListener("click", () => {
     state.entries = state.entries.filter((e) => e.id !== lastId);
     state.groceries = state.groceries.filter((g) => g.id !== lastId);
     persist(); renderHome(); renderLog();
     toast("取り消しました", false);
+    say(idleLine(), false);
   });
-  $("swap").addEventListener("click", () => { thingIdx = (thingIdx + 1) % THINGS.length; renderHome(); });
+  $("buddyBtn").addEventListener("click", () => {
+    cheerIdx = (cheerIdx + 1) % CHEERS.length;
+    say(CHEERS[cheerIdx], true);
+  });
+  $("swap").addEventListener("click", () => { thingIdx = (thingIdx + 1) % THINGS.length; thingPicked = true; renderHome(); });
   $("demoClear").addEventListener("click", () => { state.entries = []; state.groceries = []; state.demo = false; persist(); renderAll(); });
   $("shopForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
@@ -638,6 +757,7 @@
     $("shopAmt").blur();
     persist(); renderHome(); renderLog();
     toast("食材費 " + yen(a) + " を足しました", true);
+    say("買い出しおつかれさま！これでいっぱい作れるね♪", true);
   });
   $("calibBtn").addEventListener("click", () => {
     const last = allMonths().find((m) => m.final && m.count);
