@@ -127,6 +127,26 @@
     background: var(--bg); padding: 8px 10px; font-size: 16px; color: var(--ink);
   }
 
+  /* 食材費 */
+  .shop { background: var(--surface); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .shop-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .shop-total { font-family: var(--display); font-weight: 700; font-size: 22px; }
+  .shop-add { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  .shop-add input {
+    width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--bg); padding: 10px 12px; font-size: 16px; color: var(--ink);
+  }
+  .shop-note { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.7; }
+  .shop-note b { color: var(--ink); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .month-head {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    border-bottom: 2px solid var(--line); padding-bottom: 6px;
+  }
+  .month-head b { font-family: var(--display); font-size: 18px; }
+  .month-head span { font-size: 12px; color: var(--muted); text-align: right; }
+  .row .minus { font-family: var(--display); font-weight: 700; color: var(--muted); }
+
   /* 数字の列 */
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .stat { background: var(--surface); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; }
@@ -233,6 +253,16 @@
       </div>
     </div>
 
+    <div class="shop">
+      <div class="shop-head"><span class="eyebrow" id="shopLabel">今月の食材費</span><span class="shop-total yen" id="shopTotal">¥0</span></div>
+      <form class="shop-add" id="shopForm">
+        <label class="sr" for="shopAmt">買った金額</label>
+        <input id="shopAmt" type="number" inputmode="numeric" min="1" step="1" placeholder="食材を買った金額（例：1280）">
+        <button class="btn" type="submit">追加</button>
+      </form>
+      <p class="shop-note" id="shopNote"></p>
+    </div>
+
     <div class="stats">
       <div class="stat"><span class="k">これまでの合計</span><span class="v yen" id="allTotal">¥0</span></div>
       <div class="stat"><span class="k">連続自炊</span><span class="v yen"><span id="streak">0</span><small>日</small></span></div>
@@ -291,6 +321,10 @@
         <label class="field">外食なら<input id="s-d-out" type="number" inputmode="numeric" min="0" step="10"></label>
         <label class="field">材料費<input id="s-d-cook" type="number" inputmode="numeric" min="0" step="10"></label></div>
       <button class="btn" type="submit">保存</button>
+      <div id="calibBox" hidden style="display:flex;flex-direction:column;gap:8px">
+        <p id="calibText"></p>
+        <button class="btn" type="button" id="calibBtn">材料費をこの単価に合わせる</button>
+      </div>
     </form>
     <form class="section" id="goalForm">
       <h2>目標</h2>
@@ -340,11 +374,13 @@
       goal: { name: "旅行の資金", amount: 30000 },
     },
     entries: [],
+    groceries: [],
   });
 
   const $ = (id) => document.getElementById(id);
   const yen = (n) => "¥" + Math.round(n).toLocaleString("ja-JP");
   const saved = (e) => Math.max(0, e.o - e.c);
+  const monthKey = (t) => { const d = new Date(t); return d.getFullYear() * 12 + d.getMonth(); };
   const dayKey = (t) => { const d = new Date(t); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); };
   const num = (v, fallback) => { const n = Number(v); return Number.isFinite(n) && n >= 0 ? Math.round(n) : fallback; };
 
@@ -363,6 +399,10 @@
         s.entries.push({ id: "demo" + i + m, t: d.getTime(), m, o: base.out, c: base.cook });
       }
     });
+    [[10, 4280], [6, 860], [2, 1530]].forEach(([ago, a], i) => {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ago, 18, 0);
+      s.groceries.push({ id: "demog" + i, t: d.getTime(), a });
+    });
     return s;
   }
 
@@ -370,6 +410,7 @@
   let state;
   try { state = JSON.parse(localStorage.getItem(KEY)); } catch { state = null; }
   if (!state || !Array.isArray(state.entries)) state = demoState();
+  if (!Array.isArray(state.groceries)) state.groceries = [];
 
   let cloud = null; // { ref }
   let writing = false, pending = false;
@@ -399,6 +440,7 @@
       const remote = snap.exists ? JSON.parse(snap.data().json || "null") : null;
       if (remote && Array.isArray(remote.entries)) {
         state = remote;
+        if (!Array.isArray(state.groceries)) state.groceries = [];
         try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
         renderAll();
       } else if (!state.demo) {
@@ -408,16 +450,30 @@
   }
 
   // ---- 計算 ----
+  // 月の途中は目安の材料費で計算し、月が終わったら「食材費の合計」で確定する
+  function monthStats(key) {
+    const es = state.entries.filter((e) => monthKey(e.t) === key);
+    const gs = state.groceries.filter((g) => monthKey(g.t) === key);
+    const out = es.reduce((a, e) => a + e.o, 0);
+    const estimate = es.reduce((a, e) => a + saved(e), 0);
+    const food = gs.reduce((a, g) => a + g.a, 0);
+    const current = key === monthKey(Date.now());
+    const final = !current && gs.length > 0;
+    return {
+      key, count: es.length, shops: gs.length, out, food, estimate, final,
+      actual: out - food,
+      perMeal: es.length && gs.length ? food / es.length : null,
+      saved: final ? out - food : estimate,
+    };
+  }
+  function allMonths() {
+    const keys = new Set([...state.entries, ...state.groceries].map((x) => monthKey(x.t)));
+    return [...keys].sort((a, b) => b - a).map(monthStats);
+  }
   function sums() {
-    const now = new Date();
-    const y = now.getFullYear(), mo = now.getMonth();
-    let all = 0, month = 0, monthCount = 0;
-    for (const e of state.entries) {
-      all += saved(e);
-      const d = new Date(e.t);
-      if (d.getFullYear() === y && d.getMonth() === mo) { month += saved(e); monthCount++; }
-    }
-    return { all, month, monthCount };
+    const cur = monthStats(monthKey(Date.now()));
+    const all = allMonths().reduce((a, m) => a + m.saved, 0);
+    return { all: Math.max(0, all), month: cur.estimate, monthCount: cur.count, cur };
   }
   function streak() {
     const days = new Set(state.entries.map((e) => dayKey(e.t)));
@@ -465,6 +521,14 @@
     $("monthCount").textContent = s.monthCount;
     $("demoBar").hidden = !state.demo;
 
+    const c = s.cur;
+    $("shopLabel").textContent = (now.getMonth() + 1) + "月の食材費";
+    $("shopTotal").textContent = yen(c.food);
+    $("shopNote").innerHTML = c.shops && c.count
+      ? "買い物 " + c.shops + "回 ÷ 自炊 " + c.count + "回 ＝ 1食 <b class=\"yen\">" + yen(c.perMeal) + "</b><br>" +
+        "月末にこの合計で確定します。今の時点で確定すると <b class=\"yen\">" + yen(Math.max(0, c.actual)) + "</b>（まとめ買いの直後は少なめに出ます）"
+      : "食材を買ったら、その金額を足していってください。月末に「食材費の合計 ÷ 作った回数」で浮いたお金を確定します。";
+
     const g = state.settings.goal;
     const p = g.amount > 0 ? Math.min(1, s.all / g.amount) : 0;
     $("goalName").textContent = g.name || "目標";
@@ -485,23 +549,35 @@
   let armedId = null;
   function renderLog() {
     $("logTotal").innerHTML = "<small>¥</small>" + Math.round(sums().all).toLocaleString("ja-JP");
-    const list = [...state.entries].sort((a, b) => b.t - a.t);
+    const list = [...state.entries, ...state.groceries].sort((a, b) => b.t - a.t);
     if (!list.length) { $("logList").innerHTML = '<p class="empty">まだ記録がありません。<br>ごはんを作ったら「作った！」を押してね。</p>'; return; }
-    const groups = new Map();
-    for (const e of list) { const k = dayKey(e.t); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); }
+    const months = new Map(allMonths().map((m) => [m.key, m]));
     const wd = ["日", "月", "火", "水", "木", "金", "土"];
-    let html = "";
-    for (const [, es] of groups) {
-      const d = new Date(es[0].t);
-      const total = es.reduce((a, e) => a + saved(e), 0);
-      html += '<div class="day"><h3><span>' + (d.getMonth() + 1) + "/" + d.getDate() + "（" + wd[d.getDay()] + '）</span><b class="yen">+' + yen(total) + "</b></h3>";
-      for (const e of es.sort((a, b) => a.t - b.t)) {
-        html += '<div class="row"><span class="tag">' + MEALS[e.m] + '</span><span class="calc yen">外食 ' + yen(e.o) + " − 材料 " + yen(e.c) +
-          '<br><span class="plus">+' + yen(saved(e)) + '</span></span><button type="button" class="del' + (armedId === e.id ? " armed" : "") + '" data-id="' + e.id + '">' +
-          (armedId === e.id ? "本当に消す" : "消す") + "</button></div>";
+    const delBtn = (id) => '<button type="button" class="del' + (armedId === id ? " armed" : "") + '" data-id="' + id + '">' + (armedId === id ? "本当に消す" : "消す") + "</button>";
+    let html = "", lastMonth = null, lastDay = null;
+    for (const x of list) {
+      const mk = monthKey(x.t), dk = dayKey(x.t), d = new Date(x.t);
+      if (mk !== lastMonth) {
+        if (lastDay !== null) html += "</div>";
+        const m = months.get(mk);
+        const how = m.final
+          ? "確定：外食 " + yen(m.out) + " − 食材費 " + yen(m.food) + "<br>1食 " + yen(m.perMeal) + "（" + m.count + "回）"
+          : m.shops ? "月末に確定　食材費 " + yen(m.food) + " ÷ " + m.count + "回" : "目安の材料費で計算中";
+        html += '<div class="month-head"><b class="yen">' + (d.getMonth() + 1) + "月 +" + yen(m.saved) + '</b><span class="yen">' + how + "</span></div>";
+        lastMonth = mk; lastDay = null;
       }
-      html += "</div>";
+      if (dk !== lastDay) {
+        if (lastDay !== null) html += "</div>";
+        const dayTotal = state.entries.filter((e) => dayKey(e.t) === dk).reduce((a, e) => a + saved(e), 0);
+        html += '<div class="day"><h3><span>' + (d.getMonth() + 1) + "/" + d.getDate() + "（" + wd[d.getDay()] + '）</span><b class="yen">' + (dayTotal ? "+" + yen(dayTotal) : "") + "</b></h3>";
+        lastDay = dk;
+      }
+      html += "a" in x
+        ? '<div class="row"><span class="tag">買</span><span class="calc yen">食材の買い物<br><span class="minus">' + yen(x.a) + "</span></span>" + delBtn(x.id) + "</div>"
+        : '<div class="row"><span class="tag">' + MEALS[x.m] + '</span><span class="calc yen">外食 ' + yen(x.o) + " − 材料 " + yen(x.c) +
+          '<br><span class="plus">+' + yen(saved(x)) + "</span></span>" + delBtn(x.id) + "</div>";
     }
+    if (lastDay !== null) html += "</div>";
     $("logList").innerHTML = html;
   }
 
@@ -510,6 +586,12 @@
     for (const m of Object.keys(MEALS)) {
       $("s-" + m + "-out").value = state.settings.meals[m].out;
       $("s-" + m + "-cook").value = state.settings.meals[m].cook;
+    }
+    const last = allMonths().find((m) => m.final && m.count);
+    $("calibBox").hidden = !last;
+    if (last) {
+      const d = new Date(Math.floor(last.key / 12), last.key % 12, 1);
+      $("calibText").innerHTML = (d.getMonth() + 1) + "月の実際の材料費は 1食 <b class=\"yen\">" + yen(last.perMeal) + "</b> でした（食材費 " + yen(last.food) + " ÷ " + last.count + "回）。";
     }
     $("g-name").value = state.settings.goal.name;
     $("g-amount").value = state.settings.goal.amount;
@@ -539,7 +621,7 @@
   $("tCook").addEventListener("input", renderGoSub);
 
   $("go").addEventListener("click", () => {
-    if (state.demo) { state.entries = []; state.demo = false; }
+    if (state.demo) { state.entries = []; state.groceries = []; state.demo = false; }
     const a = currentAmounts();
     const e = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t: Date.now(), m: meal, o: a.o, c: a.c };
     state.entries.push(e);
@@ -552,16 +634,42 @@
   });
   $("toastUndo").addEventListener("click", () => {
     state.entries = state.entries.filter((e) => e.id !== lastId);
+    state.groceries = state.groceries.filter((g) => g.id !== lastId);
     persist(); renderHome(); renderLog();
     toast("取り消しました", false);
   });
   $("swap").addEventListener("click", () => { thingIdx = (thingIdx + 1) % THINGS.length; renderHome(); });
-  $("demoClear").addEventListener("click", () => { state.entries = []; state.demo = false; persist(); renderAll(); });
+  $("demoClear").addEventListener("click", () => { state.entries = []; state.groceries = []; state.demo = false; persist(); renderAll(); });
+  $("shopForm").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const a = num($("shopAmt").value, 0);
+    if (!a) { toast("金額を入れてください", false); return; }
+    if (state.demo) { state.entries = []; state.groceries = []; state.demo = false; }
+    state.groceries.push({ id: "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t: Date.now(), a });
+    lastId = state.groceries[state.groceries.length - 1].id;
+    $("shopAmt").value = "";
+    $("shopAmt").blur();
+    persist(); renderHome(); renderLog();
+    toast("食材費 " + yen(a) + " を足しました", true);
+  });
+  $("calibBtn").addEventListener("click", () => {
+    const last = allMonths().find((m) => m.final && m.count);
+    if (!last) return;
+    const es = state.entries.filter((e) => monthKey(e.t) === last.key);
+    const avgNow = es.reduce((a, e) => a + state.settings.meals[e.m].cook, 0) / es.length;
+    const ratio = avgNow > 0 ? last.perMeal / avgNow : 1;
+    for (const m of Object.keys(MEALS)) {
+      const cur = state.settings.meals[m];
+      cur.cook = Math.round((cur.cook * ratio) / 10) * 10;
+    }
+    persist(); renderAll(); toast("材料費を実際の単価に合わせました", false);
+  });
 
   $("logList").addEventListener("click", (ev) => {
     const b = ev.target.closest(".del"); if (!b) return;
     if (armedId === b.dataset.id) {
       state.entries = state.entries.filter((e) => e.id !== armedId);
+      state.groceries = state.groceries.filter((g) => g.id !== armedId);
       armedId = null; persist(); renderHome();
     } else armedId = b.dataset.id;
     renderLog();
@@ -583,7 +691,7 @@
   let resetArmed = false;
   $("resetBtn").addEventListener("click", () => {
     if (!resetArmed) { resetArmed = true; $("resetBtn").classList.add("armed"); $("resetBtn").textContent = "もう一度押すと消えます"; return; }
-    state.entries = []; state.demo = false; persist(); renderAll();
+    state.entries = []; state.groceries = []; state.demo = false; persist(); renderAll();
     resetArmed = false; $("resetBtn").classList.remove("armed"); $("resetBtn").textContent = "すべての記録を消す";
     toast("記録を消しました", false);
   });
