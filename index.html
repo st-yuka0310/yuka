@@ -195,6 +195,29 @@
   .jar-info .sub { font-size: 13px; color: var(--muted); }
   #jarFill { transition: y .6s ease, height .6s ease; }
 
+  /* ほかの目標 */
+  .goals { display: flex; flex-direction: column; gap: 8px; }
+  .goals h3 { margin: 0; font-size: 13px; color: var(--muted); font-weight: 700; }
+  .goal-row {
+    border: 0; background: var(--surface); border-radius: 18px; padding: 10px 14px; box-shadow: var(--shadow);
+    display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; text-align: left; align-items: baseline;
+  }
+  .goal-row b { font-weight: 700; overflow-wrap: anywhere; }
+  .goal-row .pc { font-family: var(--display); font-weight: 900; color: var(--gold); }
+  .goal-row .bar { grid-column: 1 / -1; height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .goal-row .bar i { display: block; height: 100%; border-radius: 999px; background: var(--gold); }
+  .goal-row small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .bought {
+    align-self: flex-start; margin-top: 4px; border: 0; border-radius: 999px; background: var(--gold); color: #FFFFFF;
+    font-weight: 900; padding: 6px 16px; box-shadow: 0 4px 0 #C58400;
+  }
+  .goal-edit { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; background: var(--bg); border-radius: 14px; padding: 8px 8px 8px 14px; }
+  .goal-edit b { overflow-wrap: anywhere; }
+  .goal-edit span { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .goal-add { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; align-items: end; }
+  .goal-add .btn { grid-column: 1 / -1; }
+  .done-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+
   /* 履歴 */
   .day { display: flex; flex-direction: column; gap: 6px; }
   .day h3 { margin: 0; font-size: 13px; color: var(--muted); font-weight: 500; display: flex; justify-content: space-between; }
@@ -360,12 +383,14 @@
         <ellipse cx="100" cy="66" rx="6" ry="3.6" fill="#FF9EB0" opacity=".8"/>
       </svg>
       <div class="jar-info">
-        <span class="eyebrow">目標</span>
+        <span class="eyebrow" id="goalEyebrow">目標</span>
         <h2 id="goalName">旅行の資金</h2>
         <span class="pct yen" id="goalPct">0%</span>
         <span class="sub yen" id="goalSub">¥0 / ¥30,000</span>
+        <button type="button" class="bought" id="boughtBtn" hidden>買った！</button>
       </div>
     </div>
+    <div class="goals" id="goalList"></div>
   </section>
 
   <!-- 履歴 -->
@@ -410,13 +435,20 @@
         <button class="btn" type="submit">追加</button>
       </form>
     </div>
-    <form class="section" id="goalForm">
+    <div class="section">
       <h2>目標</h2>
-      <p>浮いたお金で何を買いたいですか？</p>
-      <label class="field">欲しいもの<input id="g-name" type="text" maxlength="30"></label>
-      <label class="field">金額<input id="g-amount" type="number" inputmode="numeric" min="0" step="100"></label>
-      <button class="btn" type="submit">保存</button>
-    </form>
+      <p>浮いたお金で何を買いたい？ いくつでも追加できて、全部いっしょに貯まっていきます（追加した日からの節約額で数えます）。</p>
+      <div id="goalEditList" class="things"></div>
+      <form id="goalForm" class="goal-add">
+        <label class="field">欲しいもの<input id="g-name" type="text" maxlength="30" placeholder="例：韓国旅行"></label>
+        <label class="field">金額<input id="g-amount" type="number" inputmode="numeric" min="1" step="1" placeholder="50000"></label>
+        <button class="btn" type="submit">目標を追加</button>
+      </form>
+      <div id="doneBox" hidden>
+        <p>かなえた目標</p>
+        <ul class="done-list" id="doneList"></ul>
+      </div>
+    </div>
     <div class="section">
       <h2>データ</h2>
       <p class="save-note" id="saveNote">記録はこの端末に保存されます。</p>
@@ -458,7 +490,8 @@
     demo: false,
     settings: {
       meals: { b: { out: 450, cook: 150 }, l: { out: 900, cook: 300 }, d: { out: 1300, cook: 450 } },
-      goal: { name: "旅行の資金", amount: 30000 },
+      goals: [{ id: "goal0", name: "旅行の資金", amount: 30000, start: 0 }],
+      mainGoal: "goal0",
       things: DEFAULT_THINGS.map((t) => ({ ...t })),
     },
     entries: [],
@@ -500,6 +533,16 @@
   if (!state || !Array.isArray(state.entries)) state = demoState();
   if (!Array.isArray(state.groceries)) state.groceries = [];
   if (!Array.isArray(state.settings.things)) state.settings.things = DEFAULT_THINGS.map((t) => ({ ...t }));
+  migrateGoals(state);
+
+  // 以前の「目標1つ」のデータを、複数の目標の形に移す
+  function migrateGoals(st) {
+    if (Array.isArray(st.settings.goals)) return;
+    const g = st.settings.goal || { name: "旅行の資金", amount: 30000 };
+    st.settings.goals = [{ id: "goal0", name: g.name, amount: g.amount, start: 0 }];
+    st.settings.mainGoal = "goal0";
+    delete st.settings.goal;
+  }
 
   let cloud = null; // { ref }
   let writing = false, pending = false;
@@ -531,6 +574,7 @@
         state = remote;
         if (!Array.isArray(state.groceries)) state.groceries = [];
         if (!Array.isArray(state.settings.things)) state.settings.things = DEFAULT_THINGS.map((t) => ({ ...t }));
+        migrateGoals(state);
         try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
         renderAll();
       } else if (!state.demo) {
@@ -553,7 +597,8 @@
       key, count: es.length, shops: gs.length, out, food, estimate, final,
       actual: out - food,
       perMeal: es.length && gs.length ? food / es.length : null,
-      saved: final ? out - food : estimate,
+      // 一度貯まったお金は減らさない。食材費は実際の1食単価を知るためだけに使う
+      saved: estimate,
     };
   }
   function allMonths() {
@@ -564,6 +609,15 @@
     const cur = monthStats(monthKey(Date.now()));
     const all = allMonths().reduce((a, m) => a + m.saved, 0);
     return { all: Math.max(0, all), month: cur.estimate, monthCount: cur.count, cur };
+  }
+  // 目標は、作った日からの節約額で貯まっていく（ほかの目標を買っても減らない）
+  function goalSaved(g) {
+    return state.entries.reduce((a, e) => a + (e.t >= (g.start || 0) ? saved(e) : 0), 0);
+  }
+  const activeGoals = () => state.settings.goals.filter((g) => !g.done);
+  function mainGoal() {
+    const act = activeGoals();
+    return act.find((g) => g.id === state.settings.mainGoal) || act[0] || null;
   }
   function streak() {
     const days = new Set(state.entries.map((e) => dayKey(e.t)));
@@ -646,14 +700,27 @@
     $("shopTotal").textContent = yen(c.food);
     $("shopNote").innerHTML = c.shops && c.count
       ? "買い物 " + c.shops + "回 ÷ 自炊 " + c.count + "回 ＝ 1食 <b class=\"yen\">" + yen(c.perMeal) + "</b><br>" +
-        "月末にこの合計で確定します。今の時点で確定すると <b class=\"yen\">" + yen(Math.max(0, c.actual)) + "</b>（まとめ買いの直後は少なめに出ます）"
-      : "食材を買ったら、その金額を足していってください。月末に「食材費の合計 ÷ 作った回数」で浮いたお金を確定します。";
+        "月が終わったら、この単価で次の月の目安を合わせられます（貯まったお金は減らないよ）"
+      : "食材を買ったら、その金額を足していってね。月が終わると、実際の1食の値段がわかります。";
 
-    const g = state.settings.goal;
-    const p = g.amount > 0 ? Math.min(1, s.all / g.amount) : 0;
-    $("goalName").textContent = g.name || "目標";
-    $("goalPct").textContent = Math.floor(p * 100) + "%";
-    $("goalSub").textContent = p >= 1 ? "達成！ " + yen(s.all) + " 貯まりました" : yen(s.all) + " / " + yen(g.amount) + "（あと " + yen(g.amount - s.all) + "）";
+    const g = mainGoal();
+    const got = g ? goalSaved(g) : 0;
+    const p = g && g.amount > 0 ? Math.min(1, got / g.amount) : 0;
+    const act = activeGoals();
+    $("goalEyebrow").textContent = act.length > 1 ? "目標（" + act.length + "つ）" : "目標";
+    $("goalName").textContent = g ? g.name : "目標を決めよう";
+    $("goalPct").textContent = g ? Math.floor(p * 100) + "%" : "";
+    $("goalSub").textContent = !g ? "設定から欲しいものを追加してね"
+      : p >= 1 ? "達成！ " + yen(got) + " 貯まりました"
+      : yen(got) + " / " + yen(g.amount) + "（あと " + yen(g.amount - got) + "）";
+    $("boughtBtn").hidden = !(g && p >= 1);
+    $("goalList").innerHTML = act.length > 1
+      ? "<h3>ほかの目標（タップで豚に入れかえ）</h3>" + act.filter((x) => x !== g).map((x) => {
+          const v = goalSaved(x), q = x.amount > 0 ? Math.min(1, v / x.amount) : 0;
+          return '<button type="button" class="goal-row" data-goal="' + esc(x.id) + '"><b>' + esc(x.name) + '</b><span class="pc yen">' + Math.floor(q * 100) + "%</span>" +
+            '<span class="bar"><i style="width:' + (q * 100).toFixed(1) + '%"></i></span><small class="yen">' + yen(v) + " / " + yen(x.amount) + "</small></button>";
+        }).join("")
+      : "";
     const top = 22, bottom = 102, h = (bottom - top) * p;
     $("jarFill").setAttribute("y", String(bottom - h));
     $("jarFill").setAttribute("height", String(h));
@@ -680,9 +747,9 @@
       if (mk !== lastMonth) {
         if (lastDay !== null) html += "</div>";
         const m = months.get(mk);
-        const how = m.final
-          ? "確定：外食 " + yen(m.out) + " − 食材費 " + yen(m.food) + "<br>1食 " + yen(m.perMeal) + "（" + m.count + "回）"
-          : m.shops ? "月末に確定　食材費 " + yen(m.food) + " ÷ " + m.count + "回" : "目安の材料費で計算中";
+        const how = m.shops && m.count
+          ? "食材費 " + yen(m.food) + " ÷ " + m.count + "回<br>実際の1食 " + yen(m.perMeal) + (m.final ? "" : "（途中）")
+          : m.shops ? "食材費 " + yen(m.food) : "";
         html += '<div class="month-head"><b class="yen">' + (d.getMonth() + 1) + "月 +" + yen(m.saved) + '</b><span class="yen">' + how + "</span></div>";
         lastMonth = mk; lastDay = null;
       }
@@ -702,7 +769,7 @@
   }
 
   // ---- 設定 ----
-  let armedThing = null;
+  let armedThing = null, armedGoal = null;
   function renderSettings() {
     for (const m of Object.keys(MEALS)) {
       $("s-" + m + "-out").value = state.settings.meals[m].out;
@@ -718,8 +785,13 @@
       '<div class="thing"><b>' + esc(x.name) + '</b><span class="yen">' + yen(x.price) + " / 1" + esc(x.unit) + "</span>" +
       '<button type="button" class="del' + (armedThing === i ? " armed" : "") + '" data-i="' + i + '">' + (armedThing === i ? "本当に消す" : "消す") + "</button></div>"
     ).join("");
-    $("g-name").value = state.settings.goal.name;
-    $("g-amount").value = state.settings.goal.amount;
+    $("goalEditList").innerHTML = activeGoals().map((g) =>
+      '<div class="goal-edit"><b>' + esc(g.name) + '</b><span class="yen">' + yen(g.amount) + "</span>" +
+      '<button type="button" class="del' + (armedGoal === g.id ? " armed" : "") + '" data-goal="' + esc(g.id) + '">' + (armedGoal === g.id ? "本当に消す" : "消す") + "</button></div>"
+    ).join("") || '<p>まだ目標がありません。</p>';
+    const done = state.settings.goals.filter((g) => g.done);
+    $("doneBox").hidden = !done.length;
+    $("doneList").innerHTML = done.map((g) => { const d = new Date(g.done); return "<li>" + (d.getMonth() + 1) + "/" + d.getDate() + "　" + esc(g.name) + "（" + yen(g.amount) + "）</li>"; }).join("");
   }
 
   function renderAll() { renderCook(); renderHome(); renderLog(); renderSettings(); say(idleLine(), false); }
@@ -737,12 +809,12 @@
   function idleLine() {
     const today = state.entries.filter((e) => dayKey(e.t) === dayKey(Date.now())).length;
     const st = streak(), s = sums();
-    const g = state.settings.goal;
+    const g = mainGoal();
     if (!state.entries.length || state.demo) return "はじめまして！ごはん作ったら「作った！」を押してね。いっしょに貯めよ〜";
     if (today >= 2) return "今日はもう" + today + "回も作ってる…！天才では？";
     if (today === 1) return st >= 2 ? st + "日連続！この調子この調子♪" : "今日も作ってえらい！明日もゆるっといこ〜";
     if (st >= 1) return "きのうまで" + st + "日連続！今日もつなげちゃう？";
-    if (g.amount > 0 && s.all >= g.amount) return "「" + g.name + "」の目標、達成してるよ！すごすぎ〜！";
+    if (g && g.amount > 0 && goalSaved(g) >= g.amount) return "「" + g.name + "」の目標、達成してるよ！すごすぎ〜！";
     return "今日もなにか作ってみよ〜？卵かけご飯でもえらいよ！";
   }
   let sayTimer;
@@ -760,8 +832,8 @@
   }
   function cookLine(e) {
     const st = streak(), s = sums();
-    const g = state.settings.goal;
-    const left = g.amount - s.all;
+    const g = mainGoal();
+    const left = g ? g.amount - goalSaved(g) : 0;
     const reach = things().filter((x) => s.month >= x.price);
     const t = reach[Math.floor(Math.random() * reach.length)];
     const lines = [
@@ -769,8 +841,8 @@
     ];
     if (t) lines.push("これで今月" + t.name + Math.floor(s.month / t.price) + t.unit + "ぶん浮いたよ♪");
     if (st >= 2) lines.push(st + "日連続だよ！まじでえらい！");
-    if (g.amount > 0 && left > 0) lines.push("「" + g.name + "」まで、あと" + yen(left) + "！");
-    if (g.amount > 0 && left <= 0) lines.push("目標達成！！「" + g.name + "」いっちゃお〜！");
+    if (g && left > 0) lines.push("「" + g.name + "」まで、あと" + yen(left) + "！");
+    if (g && left <= 0) lines.push("目標達成！！「" + g.name + "」いっちゃお〜！");
     return lines[Math.floor(Math.random() * lines.length)];
   }
 
@@ -899,8 +971,33 @@
   });
   $("goalForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
-    state.settings.goal = { name: $("g-name").value.trim() || "目標", amount: num($("g-amount").value, state.settings.goal.amount) };
-    persist(); renderAll(); toast("目標を保存しました", false);
+    const name = $("g-name").value.trim(), amount = num($("g-amount").value, 0);
+    if (!name || !amount) { toast("欲しいものと金額を入れてね", false); return; }
+    const id = "goal" + Date.now().toString(36);
+    state.settings.goals.push({ id, name, amount, start: midnight(new Date()).getTime() });
+    if (!mainGoal() || activeGoals().length === 1) state.settings.mainGoal = id;
+    $("g-name").value = ""; $("g-amount").value = "";
+    persist(); renderAll(); toast("目標「" + name + "」を追加しました", false);
+  });
+  $("goalEditList").addEventListener("click", (ev) => {
+    const b = ev.target.closest(".del"); if (!b) return;
+    const id = b.dataset.goal;
+    if (armedGoal === id) {
+      state.settings.goals = state.settings.goals.filter((g) => g.id !== id);
+      armedGoal = null; persist(); renderAll();
+    } else { armedGoal = id; renderSettings(); }
+  });
+  $("goalList").addEventListener("click", (ev) => {
+    const b = ev.target.closest(".goal-row"); if (!b) return;
+    state.settings.mainGoal = b.dataset.goal; persist(); renderHome();
+  });
+  $("boughtBtn").addEventListener("click", () => {
+    const g = mainGoal(); if (!g) return;
+    g.done = Date.now();
+    const next = activeGoals()[0];
+    state.settings.mainGoal = next ? next.id : null;
+    persist(); renderAll();
+    say("「" + g.name + "」ゲットおめでとう〜！！がんばったね！", true);
   });
   let resetArmed = false;
   $("resetBtn").addEventListener("click", () => {
